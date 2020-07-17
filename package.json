@@ -1,0 +1,15 @@
+{
+  "name": "Talk",
+  "version": "0.0.1",
+  "description": "API to convert text into speech using Amazon Polly",
+  "main": "app.js",
+  "repository": "https://github.com/hsoo6373/Talk",
+  "author": "Hrithvik Sood",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^26.1.0"
+  },
+  "scripts": {
+    "test": "jest"
+  }
+}
