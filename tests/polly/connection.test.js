@@ -16,67 +16,83 @@ describe('AWS SDK connection test', () => {
 
 describe('Check if language settings are correct and available by Polly', () => {
     it('Language code by default should be en-US', () => {
-        expect(pollyConnection.getLanguage()).toBe('en-US');
+        var settings = pollyConnection.setupPolly();
+        expect(settings.language).toBe('en-US');
     });
     it('Language code for English must be en-US', () => {
-        pollyConnection.setLanguage('english');
-        expect(pollyConnection.getLanguage()).toBe('en-US');
+        var settings = pollyConnection.setupPolly();
+        settings.language = 'english';
+        expect(settings.language).toBe('en-US');
     });
     it('Language code for unknown language must be en-US', () => {
-        pollyConnection.setLanguage('xhosa');
-        expect(pollyConnection.getLanguage()).toBe('en-US');
+        var settings = pollyConnection.setupPolly();
+        settings.language = 'xhosa';
+        expect(settings.language).toBe('en-US');
     });
-    it('Language code for empty string must be en-US', () => {
-        pollyConnection.setLanguage('');
-        expect(pollyConnection.getLanguage()).toBe('en-US');
+    it('Language code for empty string must not change', () => {
+        var settings = pollyConnection.setupPolly();
+        settings.language = 'polish';
+        settings.language = '';
+        expect(settings.language).toBe('pl-PL');
     });
-    it('Language code for int must be en-US', () => {
-        pollyConnection.setLanguage(2);
-        expect(pollyConnection.getLanguage()).toBe('en-US');
+    it('Language code for int must not change', () => {
+        var settings = new pollyConnection.setupPolly();
+        settings.language = 2;
+        expect(settings.language).toBe('en-US');
     });
-    it('Language code for boolean must be en-US', () => {
-        pollyConnection.setLanguage(false);
-        expect(pollyConnection.getLanguage()).toBe('en-US');
+    it('Language code for boolean must not change', () => {
+        var settings = pollyConnection.setupPolly();
+        settings.language = false;
+        expect(settings.language).toBe('en-US');
     });
     it('Language code for Hindi must be hi-IN', () => {
-        pollyConnection.setLanguage('hindi');
-        expect(pollyConnection.getLanguage()).toBe('hi-IN');
+        var settings = pollyConnection.setupPolly();
+        settings.language = 'hindi';
+        expect(settings.language).toBe('hi-IN');
     });
     it('Language code for Korean must be ko-KR', () => {
-        pollyConnection.setLanguage('korean');
-        expect(pollyConnection.getLanguage()).toBe('ko-KR');
+        var settings = pollyConnection.setupPolly();
+        settings.language = 'korean';
+        expect(settings.language).toBe('ko-KR');
     });
     it('Language code for arabic must be arb', () => {
-        pollyConnection.setLanguage('arabic');
-        expect(pollyConnection.getLanguage()).toBe('arb');
+        var settings = pollyConnection.setupPolly();
+        settings.language = 'arabic';
+        expect(settings.language).toBe('arb');
     });
     it('Language code for Australian English must be en-AU', () => {
-        pollyConnection.setLanguage('english');
-        pollyConnection.setAccent('australian');
-        expect(pollyConnection.getLanguage()).toBe('en-AU');
+        var settings = pollyConnection.setupPolly();
+        settings.language = 'english';
+        settings.accent = 'australian english';
+        expect(settings.language).toBe('en-AU');
     });
     it('Choosing wrong accent for a language, changes must not be made', () => {
-        pollyConnection.setAccent('korean');
-        pollyConnection.setLanguage('english');
-        expect(pollyConnection.getLanguage()).toBe('en-US');
+        var settings = pollyConnection.setupPolly();
+        settings.accent = 'korean';
+        settings.language = 'english';
+        expect(settings.language).toBe('en-US');
     });
     it('Choosing accent without language. Should be allowed', () => {
-        pollyConnection.setAccent('brazillian portuguese');
-        expect(pollyConnection.getLanguage()).toBe('pt-BR');
+        var settings = pollyConnection.setupPolly();
+        settings.accent = 'brazillian portuguese';
+        expect(settings.language).toBe('pt-BR');
     });
-    it('Choosing wrong accent for a language after changing the language. Must remain the last valid language', () => {
-        pollyConnection.setAccent('indian');
-        pollyConnection.setAccent('korean');
-        expect(pollyConnection.getLanguage()).toBe('hi-IN');
+    it('Choosing invalid accent. Must remain the last valid language and accent', () => {
+        var settings = pollyConnection.setupPolly();
+        settings.accent = 'indian english';
+        settings.accent = 'korean';
+        expect(settings.language).toBe('en-IN');
     });
-    it('Choosing Indian accent before language, must be en-IN', () => {
-        pollyConnection.setAccent('indian');
-        pollyConnection.setLanguage('english');
-        expect(pollyConnection.getLanguage()).toBe('en-IN');
+    it('Choosing accent before language, must not change to default accent. Should be en-IN', () => {
+        var settings = pollyConnection.setupPolly();
+        settings.accent = 'indian english';
+        settings.language = 'english';
+        expect(settings.language).toBe('en-IN');
     });
-    it('Choosing Brazillian accent before language, must be en-IN', () => {
-        pollyConnection.setAccent('brazillian');
-        pollyConnection.setLanguage('portuguese');
-        expect(pollyConnection.getLanguage()).toBe('pt-BR');
+    it('Choosing accent before language. Must not change to default accent. Should be pt-BR', () => {
+        var settings = pollyConnection.setupPolly();
+        settings.accent = 'brazillian portuguese';
+        settings.language = 'portuguese';
+        expect(settings.language).toBe('pt-BR');
     });
 });
