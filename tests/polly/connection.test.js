@@ -60,39 +60,66 @@ describe('Check if language settings are correct and available by Polly', () => 
         settings.language = 'arabic';
         expect(settings.language).toBe('arb');
     });
-    it('Language code for Australian English must be en-AU', () => {
+    it('Changing language should be allowed - highest priority', () => {
         var settings = pollyConnection.setupPolly();
         settings.language = 'english';
-        settings.accent = 'australian english';
+        settings.language = 'australian english';
         expect(settings.language).toBe('en-AU');
     });
-    it('Choosing wrong accent for a language, changes must not be made', () => {
+    it('Choosing invalid accent. Must remain the last valid language', () => {
         var settings = pollyConnection.setupPolly();
-        settings.accent = 'korean';
-        settings.language = 'english';
-        expect(settings.language).toBe('en-US');
-    });
-    it('Choosing accent without language. Should be allowed', () => {
-        var settings = pollyConnection.setupPolly();
-        settings.accent = 'brazillian portuguese';
-        expect(settings.language).toBe('pt-BR');
-    });
-    it('Choosing invalid accent. Must remain the last valid language and accent', () => {
-        var settings = pollyConnection.setupPolly();
-        settings.accent = 'indian english';
-        settings.accent = 'korean';
+        settings.language = 'indian english';
+        settings.language = 'russian korean';
         expect(settings.language).toBe('en-IN');
     });
-    it('Choosing accent before language, must not change to default accent. Should be en-IN', () => {
+    it('Choosing indian english. Should be en-IN', () => {
         var settings = pollyConnection.setupPolly();
-        settings.accent = 'indian english';
-        settings.language = 'english';
+        settings.language = 'indina english';
         expect(settings.language).toBe('en-IN');
     });
-    it('Choosing accent before language. Must not change to default accent. Should be pt-BR', () => {
+    it('Choosing brazillian portuguese. Should be pt-BR', () => {
         var settings = pollyConnection.setupPolly();
-        settings.accent = 'brazillian portuguese';
-        settings.language = 'portuguese';
+        settings.language = 'brazillian portuguese';
         expect(settings.language).toBe('pt-BR');
     });
+});
+
+describe('Check if voice chosen will not result in an error', () => {
+    it('Default voice should be Joanna', () => {
+        var settings = pollyConnection.setupPolly();
+        expect(settings.VoiceId).toBe('Joanna');
+    });
+    it('Changing just the voice id should also change to it\'s corresponding language code', () => {
+        var settings = pollyConnection.setupPolly();
+        settings.voice = 'Zhiyu';
+        expect(settings.language).toBe('cmn-CN');
+        expect(settings.voice).toBe('Zhiyu');
+    });
+    it('Changing voice to a person who\'s bilingual. Language should be the person\'s main language', () => {
+        var settings = pollyConnection.setupPolly();
+        settings.voice = 'Aditi';
+        expect(settings.language).toBe('hi-IN');
+    });
+});
+
+describe('Voice should change to its appropriate default when changing the language', () => {
+    it('Changing language to hindi should change voice to Aditi', () => {
+        var settings = pollyConnection.setupPolly();
+        settings.language = 'hindi';
+        expect(settings.voice).toBe('Aditi');
+    });
+    it('Changing language to australian english should change voice to Nicole', () => {
+        var settings = pollyConnection.setupPolly();
+        settings.language = 'hindi';
+        expect(settings.voice).toBe('Nicole');
+    });
+    it('Changing language to brazillian portuguese should change voice to Camila', () => {
+        var settings = pollyConnection.setupPolly();
+        settings.language = 'australian english';
+        expect(settings.voice).toBe('Camila');
+    });
+});
+
+describe('Checking if priorities hold with polly configuration', () => {
+    
 });
