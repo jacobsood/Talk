@@ -74,7 +74,7 @@ describe('Check if language settings are correct and available by Polly', () => 
     });
     it('Choosing indian english. Should be en-IN', () => {
         var settings = pollyConnection.setupPolly();
-        settings.language = 'indina english';
+        settings.language = 'indian english';
         expect(settings.language).toBe('en-IN');
     });
     it('Choosing brazillian portuguese. Should be pt-BR', () => {
@@ -84,7 +84,7 @@ describe('Check if language settings are correct and available by Polly', () => 
     });
 });
 
-describe('Check if voice chosen will not result in an error', () => {
+describe('Check if voice chosen are valid', () => {
     it('Default voice should be Joanna', () => {
         var settings = pollyConnection.setupPolly();
         expect(settings.VoiceId).toBe('Joanna');
@@ -92,13 +92,36 @@ describe('Check if voice chosen will not result in an error', () => {
     it('Changing just the voice id should also change to it\'s corresponding language code', () => {
         var settings = pollyConnection.setupPolly();
         settings.voice = 'Zhiyu';
-        expect(settings.language).toBe('cmn-CN');
         expect(settings.voice).toBe('Zhiyu');
+        expect(settings.language).toBe('cmn-CN');
     });
-    it('Changing voice to a person who\'s bilingual. Language should be the person\'s main language', () => {
+    it('Changing voice to a person who\'s bilingual. Language should prioritise english if language not chosen', () => {
         var settings = pollyConnection.setupPolly();
         settings.voice = 'Aditi';
+        expect(settings.voice).toBe('Aditi');
+        expect(settings.language).toBe('en-IN');
+    });
+    it('Changing voice to a person who\'s bilingual. Language should remain the same, if chosen and supported', () => {
+        var settings = pollyConnection.setupPolly();
+        settings.language = 'hindi';
+        settings.voice = 'Aditi';
+        expect(settings.voice).toBe('Aditi');
         expect(settings.language).toBe('hi-IN');
+    });
+    it('Unknown voice should not change the settings', () => {
+        var settings = pollyConnection.setupPolly();
+        settings.voice = 'Bryan';
+        expect(settings.voice).not.toBe('Bryan');
+    });
+    it('Passing integer as voice should not change the settings', () => {
+        var settings = pollyConnection.setupPolly();
+        settings.voice = 5;
+        expect(settings.voice).not.toBe(5);
+    });
+    it('null voice should not change the settings', () => {
+        var settings = pollyConnection.setupPolly();
+        settings.voice = null;
+        expect(settings.voice).not.toBeNull();
     });
 });
 
@@ -110,16 +133,27 @@ describe('Voice should change to its appropriate default when changing the langu
     });
     it('Changing language to australian english should change voice to Nicole', () => {
         var settings = pollyConnection.setupPolly();
-        settings.language = 'hindi';
+        settings.language = 'australian english';
         expect(settings.voice).toBe('Nicole');
     });
     it('Changing language to brazillian portuguese should change voice to Camila', () => {
         var settings = pollyConnection.setupPolly();
-        settings.language = 'australian english';
+        settings.language = 'brazillian portuguese';
         expect(settings.voice).toBe('Camila');
     });
 });
 
 describe('Checking if priorities hold with polly configuration', () => {
-    
+    it('Changing voice before language should not change voiceID to default of the language, if voice exists for that language',() => {
+        var settings = pollyConnection.setupPolly();
+        settings.voice = 'Lucia';
+        settings.language = 'spanish';
+        expect(settings.voice).toBe('Lucia');
+    });
+    it('Changing voice before language should change voiceID to default of the language if voice doesn\'t exists for that language',() => {
+        var settings = pollyConnection.setupPolly();
+        settings.voice = 'Carmen';
+        settings.language = 'spanish';
+        expect(settings.voice).toBe('Conchita');
+    });
 });
