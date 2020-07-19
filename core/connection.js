@@ -1,5 +1,10 @@
 var AWS = require('aws-sdk');
 
+const engine = {
+    NEURAL: 'neural',
+    STANDARD: 'standard',
+}
+
 const gender = {
     MALE: 0,
     FEMALE: 1,
@@ -66,15 +71,15 @@ const voices = {
         },
     },
     'en-US': {
-        'Ivy': {
-            'gender': gender.FEMALE,
-            'child': true,
-            'neural': true,
-        },
         'Joanna': {
             'gender': gender.FEMALE,
             'neural': true,
             'newscaster': true,
+        },
+        'Ivy': {
+            'gender': gender.FEMALE,
+            'child': true,
+            'neural': true,
         },
         'Kendra': {
             'gender': gender.FEMALE,
@@ -265,7 +270,7 @@ const voices = {
             'gender': gender.FEMALE,
         },
     },
-    'tr-TK': {
+    'tr-TR': {
         'Filiz': {
             'gender': gender.FEMALE,
         },
@@ -294,7 +299,7 @@ const languages = {
     'hindi': 'hi-IN',
     'korean': 'ko-KR',
     'norwegian': 'nb-NO',
-    'dutch': 'nt-NL',
+    'dutch': 'nl-NL',
     'polish': 'pl-PL',
     'portuguese': 'pt-PT',
     'romanian': 'ro-RO',
@@ -315,7 +320,7 @@ const languages = {
 
 // object prototype
 // Setter methods priorities compatible Amazon Polly settings in the following order
-// person > language > person > engine
+// language > person > engine
 const settings = {
     Engine: 'standard',
     LanguageCode: 'en-US',
@@ -328,13 +333,17 @@ const settings = {
         return this.LanguageCode;
     },
     
+    get voice() {
+        return this.VoiceId;
+    },
+    
+    get engine() {
+        return this.Engine;
+    },
+    
     set language(lang) {
-        if (typeof lang !== "string") {
-            console.log("Passed parameter must be a string.");
-            return;
-        }
-        if (lang === undefined || lang == null) {
-            console.log('No parameters passed. Language did not change.');
+        if (typeof lang !== 'string') {
+            console.log('A string must be passed as a parameter. No changes made.');
         }
         else if (languages.hasOwnProperty(lang)) {
             this.LanguageCode = languages[lang];
@@ -344,6 +353,12 @@ const settings = {
                 console.log(`Currently set voice, ${this.voice}, is not available for your chosen language, ${this.language}.`);
                 this.VoiceId = languageVoices[0];
                 console.log(`Voice changed to ${this.voice}.`);
+                
+                // Change engine if current engine is not supported as the result of the voice change
+                let voiceObj = voices[this.language][this.voice];
+                if (voiceObj[this.engine] === undefined || voiceObj[this.engine] === false) {
+                    this.engine = 'switch';
+                }
             }
         }
         else {
@@ -351,17 +366,9 @@ const settings = {
         }
     },
     
-    get voice() {
-        return this.VoiceId;
-    },
-    
     set voice(voiceId) {
-        if (typeof voiceId !== "string") {
-            console.log("Passed parameter must be a string.");
-            return;
-        }
-        if (voiceId === null || voiceId === undefined) {
-            console.log('No parameters passed. No changes made.')
+        if (typeof voiceId !== 'string') {
+            console.log('A string must be passed as a parameter. No changes made.');
             return;
         }
         // Check if voiceId exists for the chosen language
@@ -369,9 +376,14 @@ const settings = {
         for (var currentVoice in voices[this.language]) {
             if (currentVoice === voiceId) {
                 this.VoiceId = voiceId;
+                // Check if voice supports current engine. If not, change engine.
+                if (voices[this.language][this.voice][this.engine] !== true) {
+                    this.engine = 'switch';
+                }
                 return;
             }
         }
+        console.log(`voice was not found for ${this.language}.`)
         // Check if voiceId exists for any language, changing both the voice and language
         for (let [language, voiceObj] of Object.entries(voices))  {
             // skip if key is the currently chosen language
@@ -379,15 +391,53 @@ const settings = {
             // Check if voiceId is available for the language
             if (Object.keys(voiceObj).includes(voiceId)) {
                 this.VoiceId = voiceId;
-                console.log(`Voice was not found for ${this.language}. Changing language to ${language}`);
                 this.LanguageCode = language;
+                // Check if voice supports current engine. If not, change engine.
+                if (voices[this.language][this.voice][this.engine] !== true) {
+                    this.engine = 'switch';
+                }
+                console.log(`Changing language to ${language}`);
                 return;
             }
         }
         // Unable to find voiceId
         console.log(`${voiceId} was not found. No changes made.`);
-    }
+    },
+    
+    set engine(engineType) {
+        if (engineType === 'switch') {
+            if (this.Engine === engine.NEURAL) {
+                engineType = engine.STANDARD;
+            } 
+            else {
+                engineType = engine.NEURAL;
+            }
+        }
+        if (typeof engineType !== 'string') {
+            console.log('A string must be passed as a parameter. No changes made.');
+            return;
+        }
+        if (engineType === engine.NEURAL) {
+            if (voices[this.language][this.voice].neural === true) {
+                this.Engine = engine.NEURAL;
+            } else {
+                console.log('${this.voice} does not support neural engine. Change a different language and/or voice and try again.');
+            }
+        }
+        else if (engineType === engine.STANDARD) {
+            if (voices[this.language][this.voice].standard === false) {
+                console.log(`${this.voice} does not support standard voice. No changes made.`);
+            } else {
+                this.Engine = engine.STANDARD;
+            }
+        } 
+        else {
+            console.log(`Passed string must be '${engine.NEURAL} | ${engine.STANDARD}'`);
+        }
+    },
 };
+
+
 
 // create and return a new object of the prototype
 export function setupPolly() {
