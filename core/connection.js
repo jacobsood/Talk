@@ -1,5 +1,9 @@
 var AWS = require('aws-sdk');
 
+var Polly = new AWS.Polly();
+var S3 = new AWS.S3();
+var BucketName;
+
 const engine = {
     NEURAL: 'neural',
     STANDARD: 'standard',
@@ -319,15 +323,26 @@ const languages = {
 };
 
 // object prototype
-// Setter methods priorities compatible Amazon Polly settings in the following order
-// language > person > engine
+// Setter methods prioritise compatible Amazon Polly settings in the following order
+// language = person > engine
 const settings = {
     Engine: 'standard',
     LanguageCode: 'en-US',
     OutputFormat: 'mp3',
-    SampleRate: '16000',
+    SampleRate: '24000',
     Text: '',
     VoiceId: 'Joanna',
+    
+    get params() {
+        return {
+            Engine: this.Engine,
+            LanguageCode: this.LanguageCode,
+            OutputFormat: this.OutputFormat,
+            SampleRate: this.SampleRate,
+            Text: this.Text,
+            VoiceId: this.VoiceId,
+        };
+    },
     
     get language() {
         return this.LanguageCode;
@@ -339,6 +354,14 @@ const settings = {
     
     get engine() {
         return this.Engine;
+    },
+    
+    get sampleRate() {
+        return this.SampleRate;
+    },
+    
+    get text() {
+        return this.Text;
     },
     
     set language(lang) {
@@ -435,11 +458,65 @@ const settings = {
             console.log(`Passed string must be '${engine.NEURAL} | ${engine.STANDARD}'`);
         }
     },
-};
-
-
-
-// create and return a new object of the prototype
-export function setupPolly() {
-    return Object.create(settings)
+    
+    set sampleRate(rate) {
+        if (rate === '8000' || rate === '16000' || rate === '22050' || rate == '24000') {
+            this.SampleRate = rate;
+        }
+        else {
+            console.log('Sample rate must be one of \'8000 | 16000 | 22050 | 2400\'');
+        }
+    },
+    
+    set text(text) {
+        this.Text = text;
+    },
 }
+
+// Checks user has access to the bucket
+function connectToS3(bucketName) {
+    if (typeof bucketName !== 'string') {
+        console.log('Bucket name must be a string. Try again.');
+        return;
+    } 
+    S3.headBucket({Bucket: bucketName}, function(err, data) {
+        if (err) {
+            console.log(err, err.stack);
+        } 
+        else {
+            console.log('Successfully connected to your S3 bucket!');
+            BucketName = bucketName;
+        }
+    });
+}
+
+function saveSpeech(pollySettings) {
+    if (typeof BucketName === undefined) {
+        console.log('Not connected to S3. Connect to S3 before proceeding.');
+        return;
+    }
+    var parameters = pollySettings.params;
+    Polly.synthesizeSpeech(parameters, (err, data) => {
+        if (err) {
+            console.log(err, err.stack);
+        }
+        else {
+            console.log('saved to', BucketName);
+            var params = {Bucket: BucketName, Key: 'unmask/kk.mp3', Body: data.AudioStream};
+            S3.upload(params, (err, data) => {
+                if (err) {
+                    console.log(err, err.stack);
+                }
+                else {
+                    console.log(data);
+                }
+            });
+        }
+    });
+}
+
+module.exports = { 
+    connectToS3: connectToS3,
+    setupPolly: () => Object.create(settings),
+    saveSpeech: saveSpeech,
+};
