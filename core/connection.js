@@ -2,7 +2,6 @@ var AWS = require('aws-sdk');
 
 var Polly = new AWS.Polly();
 var S3 = new AWS.S3();
-var BucketName;
 
 const engine = {
     NEURAL: 'neural',
@@ -473,36 +472,39 @@ const settings = {
     },
 }
 
-// Checks user has access to the bucket
+// Checks if user has access to the bucket
 function connectToS3(bucketName) {
     if (typeof bucketName !== 'string') {
         console.log('Bucket name must be a string. Try again.');
-        return;
+        return false;
     } 
     S3.headBucket({Bucket: bucketName}, function(err, data) {
         if (err) {
             console.log(err, err.stack);
+            return false;
         } 
         else {
             console.log('Successfully connected to your S3 bucket!');
-            BucketName = bucketName;
+            return true;
         }
     });
 }
 
-function saveSpeech(pollySettings) {
-    if (typeof BucketName === undefined) {
+function saveSpeech(pollySettings, title, bucketName) {
+    if (typeof bucketName === undefined) {
         console.log('Not connected to S3. Connect to S3 before proceeding.');
         return;
     }
+    var key = `unmask/${title}.mp3`;
     var parameters = pollySettings.params;
     Polly.synthesizeSpeech(parameters, (err, data) => {
         if (err) {
             console.log(err, err.stack);
         }
         else {
-            console.log('saved to', BucketName);
-            var params = {Bucket: BucketName, Key: 'unmask/kk.mp3', Body: data.AudioStream};
+            console.log(key);
+            console.log('saved to', bucketName);
+            var params = {Bucket: bucketName, Key: key, Body: data.AudioStream};
             S3.upload(params, (err, data) => {
                 if (err) {
                     console.log(err, err.stack);
